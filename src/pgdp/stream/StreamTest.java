@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * fs.schmidt@tum.de
  * <p>
  * Do not push this class, as importing from jupiter causes compilation failure on Artemis.
- * --> v1.6
+ * --> v1.7
  */
 class StreamTest {
 	/**
@@ -313,6 +313,16 @@ class StreamTest {
 	}
 
 	@Test
+	@DisplayName("Multiple terminal operations on same Stream must fail")
+	void consumeTwice() {
+		Stream<Integer> stream = Stream.of(1, 2, 3, 4, 5);
+		stream.count();
+
+		//execute another terminal operation on the same stream
+		assertThrows(RuntimeException.class, stream::findFirst);
+	}
+
+	@Test
 	@DisplayName("Handles null elements")
 	void handlesNull() {
 		List<String> list = new ArrayList<>();
@@ -353,6 +363,7 @@ class StreamTest {
 	@Test
 	@DisplayName("Handles null in firstElement correctly")
 	void firstElementTerminalNull() {
+		assertThrows(NullPointerException.class, () -> Stream.of(new Object[]{null}).findFirst());
 		assertThrows(NullPointerException.class, () -> Stream.of((Object) null).findFirst());
 		assertThrows(ErrorsAtTerminalOperationException.class, () -> Stream.of(1).map(i -> {
 			throw new RuntimeException();
@@ -370,6 +381,12 @@ class StreamTest {
 	@Test
 	@DisplayName("Provokes exceptions in checked stream")
 	void streamExceptions() {
+		//expected behavior with terminals see javadoc
+		assertThrows(NullPointerException.class, () -> Stream.of().reduce(null));
+		assertThrows(NullPointerException.class, () -> Stream.of().toCollection(null));
+		assertThrows(NullPointerException.class, () -> Stream.of().toCollection(() -> null));
+
+		//terminals
 		//case 1: terminal operation on checked stream
 		assertThrows(CheckedStreamException.class, () -> Stream.of(1, 2, 3, 4, 5).mapChecked(i -> {
 			if (i == 1) throw new Exception();
